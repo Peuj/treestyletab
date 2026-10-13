@@ -982,7 +982,7 @@ export async function behaveAutoAttachedTab(
         detachTab(tab, {
           broadcast
         });
-        return TabsMove.moveTabAfter(tab, Tab.getLastTab(tab.windowId), {
+        return TabsMove.moveTabAfter(tab, baseTab.$TST.lastDescendant || baseTab, {
           delayedMove: true
         });
       }

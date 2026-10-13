@@ -210,3 +210,50 @@ export async function testReopenedWithPositionByAnotherAddonImmediatelyWhileCrea
   ], Utils.treeStructure([tabs.A, tabs.reopened, tabs.B]),
      'reopened tab must be attached from its position');
 }
+
+
+export async function testAutoAttachOnNewTabCommand_openAsSiblingWithRootActiveTab() {
+  await Utils.wait(configs.tabBunchesDetectionDelayOnNewWindow);
+  await Utils.setConfigs({
+    autoAttachOnNewTabCommand: Constants.kNEWTAB_OPEN_AS_SIBLING
+  });
+
+  const tabs = await Utils.createTabs({
+    A: { index: 1, active: true },
+    B: { index: 2 }
+  }, { windowId: win.id });
+
+  const newTabs = await Utils.doAndGetNewTabs(async () => {
+    await browser.tabs.create({ windowId: win.id });
+    await Utils.wait(1000);
+  }, { windowId: win.id });
+
+  is(1, newTabs.length, 'one new tab must be opened');
+  is(tabs.A.index + 1, newTabs[0].index,
+     'new tab must be placed right after root-level active tab, not at end of list');
+}
+
+export async function testAutoAttachOnNewTabCommand_openAsSiblingWithParentedActiveTab() {
+  await Utils.wait(configs.tabBunchesDetectionDelayOnNewWindow);
+  await Utils.setConfigs({
+    autoAttachOnNewTabCommand: Constants.kNEWTAB_OPEN_AS_SIBLING
+  });
+
+  const tabs = await Utils.createTabs({
+    A: { index: 1 },
+    B: { index: 2, openerTabId: 'A', active: true }
+  }, { windowId: win.id });
+
+  const newTabs = await Utils.doAndGetNewTabs(async () => {
+    await browser.tabs.create({ windowId: win.id });
+    await Utils.wait(1000);
+  }, { windowId: win.id });
+
+  is(1, newTabs.length, 'one new tab must be opened');
+  is([
+    `${tabs.A.id}`,
+    `${tabs.A.id} => ${tabs.B.id}`,
+    `${tabs.A.id} => ${newTabs[0].id}`
+  ], Utils.treeStructure([tabs.A, tabs.B, newTabs[0]]),
+     'new tab must be attached to the parent of the active tab as a sibling');
+}
